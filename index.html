@@ -98,7 +98,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2016/07/21/Javascrip-Date/" data-id="ciqxbqvbk0003nus6xbm22763" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2016/07/21/Javascrip-Date/" data-id="ciqxbtrzn0002rbs66xhpwfst" class="article-share-link">Share</a>
       
       
     </footer>
@@ -133,10 +133,9 @@
         <h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><p>目前eslint只支持ES6/ES2015，不支持spread object语法，经查发现spread object是ES7规范（还包括class properties,decorators,async/await）</p>
 <p>参考：<a href="https://github.com/eslint/eslint/issues/2532" target="_blank" rel="external">https://github.com/eslint/eslint/issues/2532</a></p>
 <h2 id="解决"><a href="#解决" class="headerlink" title="解决"></a>解决</h2><h3 id="1-eslint语法检查："><a href="#1-eslint语法检查：" class="headerlink" title="1. eslint语法检查："></a>1. eslint语法检查：</h3><p>安装babel-eslint<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">npm install babel-eslint --save-dev</div></pre></td></tr></table></figure></p>
-<p>配置.eslintrc<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">&quot;parser&quot;: &quot;babel-eslint&quot;</div></pre></td></tr></table></figure></p>
 <p>倘若需要支持generator-star，object-shorthand等特性，需要安装eslint-plugin-babel<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">npm install eslint-plugin-babel --save-dev</div></pre></td></tr></table></figure></p>
 <p>然后在配置文件.eslintrc.* 添加如下配置<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">&#123;</div><div class="line">  &quot;parser&quot;: &quot;babel-eslint&quot;,</div><div class="line">  &quot;plugins&quot;: [</div><div class="line">    &quot;babel&quot;</div><div class="line">  ]</div><div class="line">  # this is for object spread</div><div class="line">  &quot;parserOptions&quot;: &#123;</div><div class="line">      &quot;ecmaFeatures&quot;: &#123;</div><div class="line">          &quot;experimentalObjectRestSpread&quot;: true</div><div class="line">      &#125;</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
-<p>####注意：<br>此处有一个坑，倘若extend airbnb-base的规则，需要把generator-star-spacing规则off掉。<br>具体在eslint-plugin-babel的gihub页面上有提及——“Finally enable all the rules you would like to use (remember to disable the original ones as well!).”<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">&#123;</div><div class="line">  &apos;rule&apos;: &#123;</div><div class="line">    &apos;generator-star-spacing&apos;: 0, // 需要把airbnb-base定义的这条规则off掉，否则babel-eslint在parse时会报错</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<h4 id="注意："><a href="#注意：" class="headerlink" title="注意："></a>注意：</h4><p>此处有一个坑，倘若extend airbnb-base的规则，需要把generator-star-spacing规则off掉。<br>具体在eslint-plugin-babel的gihub页面上有提及——“Finally enable all the rules you would like to use (remember to disable the original ones as well!).”<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">&#123;</div><div class="line">  &apos;rule&apos;: &#123;</div><div class="line">    &apos;generator-star-spacing&apos;: 0, // 需要把airbnb-base定义的这条规则off掉，否则babel-eslint在parse时会报错</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
 <h3 id="2-代码运行："><a href="#2-代码运行：" class="headerlink" title="2. 代码运行："></a>2. 代码运行：</h3><p>上一步只是eslint代码的语法检查配置，倘若需要代码能够执行ES7特性的代码，还需要添加一下babel插件。</p>
 <p>安装babel插件，babel-plugin-transform-object-rest-spread<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">npm install babel-plugin-transform-object-rest-spread --save-dev</div></pre></td></tr></table></figure></p>
 <p>添加下面一行到.babelrc文件，倘若是fis3里使用babel进行编译的话，则加到对应的babel options里<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">&#123;</div><div class="line">    &quot;plugins&quot;: [&quot;transform-object-rest-spread&quot;]</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
@@ -145,7 +144,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2016/05/27/Eslint开启ES7语法校验/" data-id="ciqxbqvb40000nus6jdc5650d" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2016/05/27/Eslint开启ES7语法校验/" data-id="ciqxbtrzb0000rbs6qkpw0yy4" class="article-share-link">Share</a>
       
       
     </footer>
@@ -208,7 +207,7 @@ http://www.jianshu.com/p/3cb89725da64
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2016/04/15/Mac-升级到El-Capitan/" data-id="ciqxbqvbg0002nus6gzyxwwfw" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2016/04/15/Mac-升级到El-Capitan/" data-id="ciqxbtrzq0003rbs6h52sysmq" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Mac/">Mac</a></li></ul>
@@ -253,7 +252,7 @@ http://www.jianshu.com/p/3cb89725da64
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2016/03/18/ES6-generator-indeep/" data-id="ciqxbqvbc0001nus6udx2mxd0" class="article-share-link">Share</a>
+      <a data-url="http://yoursite.com/2016/03/18/ES6-generator-indeep/" data-id="ciqxbtrzj0001rbs6bzl04z7g" class="article-share-link">Share</a>
       
       
     </footer>

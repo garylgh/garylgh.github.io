@@ -50,7 +50,7 @@
         
           <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
         
-        <a id="nav-search-btn" class="nav-icon" title="Zoeken"></a>
+        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
       </nav>
       <div id="search-form-wrap">
         <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" results="0" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
@@ -88,12 +88,8 @@
 <p>UTC：英文「Coordinated Universal Time」／法文「Temps Universel Coordonné」）中文：世界标准时间。简单来说便是0度经线的时间。北京处于东八区，写作UTC+8;<br>GMT：格林尼治标准时间，是指位于英国伦敦郊区的皇家格林尼治天文台的标准时间。理论上来说，GMT应该等于UTC。</p>
 </li>
 <li><p>时间的初始化</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">Date()</div></pre></td></tr></table></figure>
-</li>
-<li><p>遇见的坑</p>
-<p>问题描述：项目中使用cookies(<a href="https://github.com/pillarjs/cookies)，设置资源的过期时间为8个小时以后，但是发现无论如何设置，浏览器上的cookie" target="_blank" rel="external">https://github.com/pillarjs/cookies)，设置资源的过期时间为8个小时以后，但是发现无论如何设置，浏览器上的cookie</a> expired time都为当前时间。</p>
-<p>原因：阅读代码（v0.6.1）发现，第148行（如下）调用toUTCString()，恰好我们所处的市区为东8区，toUTCString获取时间恰好差8个小时，因此在浏览器永远都是cookies刚返回就失效的状况。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">if (this.expires  ) header += &quot;; expires=&quot; + this.expires.toUTCString()</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div></pre></td><td class="code"><pre><div class="line">  Date()</div><div class="line">  ```     </div><div class="line"></div><div class="line">3. 遇见的坑</div><div class="line"></div><div class="line">  问题描述：项目中使用cookies(https://github.com/pillarjs/cookies)，设置资源的过期时间为8个小时以后，但是发现无论如何设置，浏览器上的cookie expired time都为当前时间。</div><div class="line"></div><div class="line">  原因：阅读代码（v0.6.1）发现，第148行（如下）调用toUTCString()，恰好我们所处的市区为东8区，toUTCString获取时间恰好差8个小时，因此在浏览器永远都是cookies刚返回就失效的状况。</div></pre></td></tr></table></figure>
+<p> if (this.expires  ) header += “; expires=” + this.expires.toUTCString()<br>```</p>
 </li>
 <li><p>时间的格式化以及不同浏览器的差异</p>
 </li>
@@ -102,7 +98,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2016/07/21/Javascrip-Date/" data-id="ciqx3h7rj0002r5s6n5icq9u6" class="article-share-link">Delen</a>
+      <a data-url="http://yoursite.com/2016/07/21/Javascrip-Date/" data-id="ciqxbqvbk0003nus6xbm22763" class="article-share-link">Share</a>
       
       
     </footer>
@@ -134,11 +130,14 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><p>目前eslint不支持spread object语法，经查发现spread object是ES7规范（还包括class properties,decorators,async/await）</p>
+        <h2 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h2><p>目前eslint只支持ES6/ES2015，不支持spread object语法，经查发现spread object是ES7规范（还包括class properties,decorators,async/await）</p>
 <p>参考：<a href="https://github.com/eslint/eslint/issues/2532" target="_blank" rel="external">https://github.com/eslint/eslint/issues/2532</a></p>
-<h2 id="解决"><a href="#解决" class="headerlink" title="解决"></a>解决</h2><h3 id="1-方法一："><a href="#1-方法一：" class="headerlink" title="1.方法一："></a>1.方法一：</h3><p>安装babel-eslint<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">npm install babel-eslint --save-dev</div></pre></td></tr></table></figure></p>
+<h2 id="解决"><a href="#解决" class="headerlink" title="解决"></a>解决</h2><h3 id="1-eslint语法检查："><a href="#1-eslint语法检查：" class="headerlink" title="1. eslint语法检查："></a>1. eslint语法检查：</h3><p>安装babel-eslint<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">npm install babel-eslint --save-dev</div></pre></td></tr></table></figure></p>
 <p>配置.eslintrc<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">&quot;parser&quot;: &quot;babel-eslint&quot;</div></pre></td></tr></table></figure></p>
-<h3 id="2-方法二："><a href="#2-方法二：" class="headerlink" title="2. 方法二："></a>2. 方法二：</h3><p>配置.eslintrc文件, 开启试验功能<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">&#123;</div><div class="line">    &quot;extends&quot;: &quot;airbnb&quot;,</div><div class="line">    # this is for object spread</div><div class="line">    &quot;parserOptions&quot;: &#123;</div><div class="line">        &quot;ecmaFeatures&quot;: &#123;</div><div class="line">            &quot;experimentalObjectRestSpread&quot;: true</div><div class="line">        &#125;</div><div class="line">    &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>倘若需要支持generator-star，object-shorthand等特性，需要安装eslint-plugin-babel<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">npm install eslint-plugin-babel --save-dev</div></pre></td></tr></table></figure></p>
+<p>然后在配置文件.eslintrc.* 添加如下配置<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div></pre></td><td class="code"><pre><div class="line">&#123;</div><div class="line">  &quot;parser&quot;: &quot;babel-eslint&quot;,</div><div class="line">  &quot;plugins&quot;: [</div><div class="line">    &quot;babel&quot;</div><div class="line">  ]</div><div class="line">  # this is for object spread</div><div class="line">  &quot;parserOptions&quot;: &#123;</div><div class="line">      &quot;ecmaFeatures&quot;: &#123;</div><div class="line">          &quot;experimentalObjectRestSpread&quot;: true</div><div class="line">      &#125;</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<p>####注意：<br>此处有一个坑，倘若extend airbnb-base的规则，需要把generator-star-spacing规则off掉。<br>具体在eslint-plugin-babel的gihub页面上有提及——“Finally enable all the rules you would like to use (remember to disable the original ones as well!).”<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div></pre></td><td class="code"><pre><div class="line">&#123;</div><div class="line">  &apos;rule&apos;: &#123;</div><div class="line">    &apos;generator-star-spacing&apos;: 0, // 需要把airbnb-base定义的这条规则off掉，否则babel-eslint在parse时会报错</div><div class="line">  &#125;</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
+<h3 id="2-代码运行："><a href="#2-代码运行：" class="headerlink" title="2. 代码运行："></a>2. 代码运行：</h3><p>上一步只是eslint代码的语法检查配置，倘若需要代码能够执行ES7特性的代码，还需要添加一下babel插件。</p>
 <p>安装babel插件，babel-plugin-transform-object-rest-spread<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">npm install babel-plugin-transform-object-rest-spread --save-dev</div></pre></td></tr></table></figure></p>
 <p>添加下面一行到.babelrc文件，倘若是fis3里使用babel进行编译的话，则加到对应的babel options里<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">&#123;</div><div class="line">    &quot;plugins&quot;: [&quot;transform-object-rest-spread&quot;]</div><div class="line">&#125;</div></pre></td></tr></table></figure></p>
 <p>To be continue…</p>
@@ -146,7 +145,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2016/05/27/Eslint开启ES7语法校验/" data-id="ciqx3h7rf0001r5s6z7fwil69" class="article-share-link">Delen</a>
+      <a data-url="http://yoursite.com/2016/05/27/Eslint开启ES7语法校验/" data-id="ciqxbqvb40000nus6jdc5650d" class="article-share-link">Share</a>
       
       
     </footer>
@@ -209,7 +208,7 @@ http://www.jianshu.com/p/3cb89725da64
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2016/04/15/Mac-升级到El-Capitan/" data-id="ciqx3h7rm0003r5s6p59a6mz5" class="article-share-link">Delen</a>
+      <a data-url="http://yoursite.com/2016/04/15/Mac-升级到El-Capitan/" data-id="ciqxbqvbg0002nus6gzyxwwfw" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Mac/">Mac</a></li></ul>
@@ -254,7 +253,7 @@ http://www.jianshu.com/p/3cb89725da64
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2016/03/18/ES6-generator-indeep/" data-id="ciqx3h7r60000r5s602927pjf" class="article-share-link">Delen</a>
+      <a data-url="http://yoursite.com/2016/03/18/ES6-generator-indeep/" data-id="ciqxbqvbc0001nus6udx2mxd0" class="article-share-link">Share</a>
       
       
     </footer>
@@ -274,7 +273,7 @@ http://www.jianshu.com/p/3cb89725da64
   
     
   <div class="widget-wrap">
-    <h3 class="widget-title">Labels</h3>
+    <h3 class="widget-title">Tags</h3>
     <div class="widget">
       <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Mac/">Mac</a></li></ul>
     </div>
@@ -293,7 +292,7 @@ http://www.jianshu.com/p/3cb89725da64
   
     
   <div class="widget-wrap">
-    <h3 class="widget-title">Archieven</h3>
+    <h3 class="widget-title">Archives</h3>
     <div class="widget">
       <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/07/">July 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/05/">May 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/04/">April 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/03/">March 2016</a></li></ul>
     </div>
@@ -303,7 +302,7 @@ http://www.jianshu.com/p/3cb89725da64
   
     
   <div class="widget-wrap">
-    <h3 class="widget-title">Recente berichten</h3>
+    <h3 class="widget-title">Recent Posts</h3>
     <div class="widget">
       <ul>
         

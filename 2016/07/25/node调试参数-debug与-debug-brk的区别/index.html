@@ -5,13 +5,13 @@
   
   <title>node调试参数--debug与--debug-brk的区别 | Hexo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="问题  在启动项目调试时，发现web服务器启动极慢，慢到无法忍受。经查找发现在node启动时–debug-brk参数惹的祸。当使用–debug-brk启动调试时，程序将停留在第一行，而且需要等待调试工具连接以后（即http://127.0.0.1:8080/?port=5858返回好久以后，此处还有疑问，为啥devTools已经加载完代码很久了，服务端代码才继续执行下去），服务端代码才正常启动起来">
+  <meta name="description" content="问题  在启动项目调试时，发现web服务器启动极慢，慢到无法忍受。经查找发现在node启动时–debug-brk参数惹的祸。当使用–debug-brk启动调试时，程序将停留在第一行，而且需要等待调试工具连接以后（即http://127.0.0.1:8080/?port=5858返回好久以后，此处还有疑问，为啥devTo">
 <meta property="og:type" content="article">
 <meta property="og:title" content="node调试参数--debug与--debug-brk的区别">
 <meta property="og:url" content="http://yoursite.com/2016/07/25/node调试参数-debug与-debug-brk的区别/index.html">
 <meta property="og:site_name" content="Hexo">
 <meta property="og:description" content="问题  在启动项目调试时，发现web服务器启动极慢，慢到无法忍受。经查找发现在node启动时–debug-brk参数惹的祸。当使用–debug-brk启动调试时，程序将停留在第一行，而且需要等待调试工具连接以后（即http://127.0.0.1:8080/?port=5858返回好久以后，此处还有疑问，为啥devTools已经加载完代码很久了，服务端代码才继续执行下去），服务端代码才正常启动起来">
-<meta property="og:updated_time" content="2016-07-25T10:29:42.000Z">
+<meta property="og:updated_time" content="2017-12-06T08:48:38.635Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="node调试参数--debug与--debug-brk的区别">
 <meta name="twitter:description" content="问题  在启动项目调试时，发现web服务器启动极慢，慢到无法忍受。经查找发现在node启动时–debug-brk参数惹的祸。当使用–debug-brk启动调试时，程序将停留在第一行，而且需要等待调试工具连接以后（即http://127.0.0.1:8080/?port=5858返回好久以后，此处还有疑问，为啥devTools已经加载完代码很久了，服务端代码才继续执行下去），服务端代码才正常启动起来">
@@ -57,7 +57,7 @@
         <a id="nav-search-btn" class="nav-icon" title="Zoeken"></a>
       </nav>
       <div id="search-form-wrap">
-        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" results="0" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
       </div>
     </div>
   </div>
@@ -85,16 +85,16 @@
     
     <div class="article-entry" itemprop="articleBody">
       
-        <h4 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h4><p>  在启动项目调试时，发现web服务器启动极慢，慢到无法忍受。经查找发现在node启动时–debug-brk参数惹的祸。当使用–debug-brk启动调试时，程序将停留在第一行，而且需要等待调试工具连接以后（即<a href="http://127.0.0.1:8080/?port=5858返回好久以后，此处还有疑问，为啥devTools已经加载完代码很久了，服务端代码才继续执行下去），服务端代码才正常启动起来，这样浏览器才能正常访问页面。" target="_blank" rel="external">http://127.0.0.1:8080/?port=5858返回好久以后，此处还有疑问，为啥devTools已经加载完代码很久了，服务端代码才继续执行下去），服务端代码才正常启动起来，这样浏览器才能正常访问页面。</a></p>
-<p>  因此启动时改用–debug参数，这样在node –debug server命令运行完成后，服务器端的代码都会自动运行完成。浏览器就能正常访问页面了。</p>
+        <h4 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h4><p>  在启动项目调试时，发现web服务器启动极慢，慢到无法忍受。经查找发现在node启动时–debug-brk参数惹的祸。当使用–debug-brk启动调试时，程序将停留在第一行，而且需要等待调试工具连接以后（即<a href="http://127.0.0.1:8080/?port=5858返回好久以后，此处还有疑问，为啥devTools已经加载完代码很久了，服务端代码才继续执行下去），服务端代码才正常启动起来，这样浏览器才能正常访问页面。" target="_blank" rel="noopener">http://127.0.0.1:8080/?port=5858返回好久以后，此处还有疑问，为啥devTools已经加载完代码很久了，服务端代码才继续执行下去），服务端代码才正常启动起来，这样浏览器才能正常访问页面。</a></p>
+<p>  因此启动时改用–debug参数，这样在node –debug server命令运行完成后，服务器端的代码都会自动运行完成。浏览器就能正常访问页面了。3Q</p>
 <h4 id="区别"><a href="#区别" class="headerlink" title="区别"></a>区别</h4><p>  <strong>–debug-brk</strong> stops the node program on the first line, meaning it will break before starting the server. You can then connect your debugger and hit Continue to run the program.</p>
 <p>  <strong>–debug</strong>  start the debugger but not break at the start. So if you have a debugger line somewhere in asynchronous code, it will still break when it hits it if your debugger is connected.</p>
-<h4 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h4><p>  <a href="http://stackoverflow.com/questions/20384822/node-debug-brk-app-js-not-functioning" target="_blank" rel="external">http://stackoverflow.com/questions/20384822/node-debug-brk-app-js-not-functioning</a></p>
+<h4 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h4><p>  <a href="http://stackoverflow.com/questions/20384822/node-debug-brk-app-js-not-functioning" target="_blank" rel="noopener">http://stackoverflow.com/questions/20384822/node-debug-brk-app-js-not-functioning</a></p>
 
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2016/07/25/node调试参数-debug与-debug-brk的区别/" data-id="cir1w6hoq0005fkfyfuzvru8k" class="article-share-link">Delen</a>
+      <a data-url="http://yoursite.com/2016/07/25/node调试参数-debug与-debug-brk的区别/" data-id="cjautakgj00048gs618cis2ka" class="article-share-link">Delen</a>
       
       
     </footer>
@@ -188,7 +188,7 @@
   
   <div class="outer">
     <div id="footer-info" class="inner">
-      &copy; 2016 John Doe<br>
+      &copy; 2017 John Doe<br>
       Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
     </div>
   </div>

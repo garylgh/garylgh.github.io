@@ -5,22 +5,17 @@
   
   <title>Mac 升级到El Capitan | Hexo</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-  <meta name="description" content="问题通过App Store跟新El Capitan，过程奇慢无比，几乎是不可能完成。下面是可行的更新办法。
-更新步骤
-抓取升级包的下载链接 目前网上有提供升级包的下载链接，但是几乎都出自同一篇文章，且该链接已经过时。为保险起见，还是自己手动抓包比较靠谱。抓包工具可选wireshark或Charles。因为本机只装了wireshark，因此用wireshark抓取，选中网卡eth0，Capture">
+  <meta name="description" content="问题通过App Store跟新El Capitan，过程奇慢无比，几乎是不可能完成。下面是可行的更新办法。 更新步骤 抓取升级包的下载链接 目前网上有提供升级包的下载链接，但是几乎都出自同一篇文章，且该链接已经过时。为保险起见，还是自己手动抓包比较靠谱。抓包工具可选wireshark或Charles。因为本机只装了wi">
+<meta name="keywords" content="Mac">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Mac 升级到El Capitan">
 <meta property="og:url" content="http://yoursite.com/2016/04/15/Mac-升级到El-Capitan/index.html">
 <meta property="og:site_name" content="Hexo">
-<meta property="og:description" content="问题通过App Store跟新El Capitan，过程奇慢无比，几乎是不可能完成。下面是可行的更新办法。
-更新步骤
-抓取升级包的下载链接 目前网上有提供升级包的下载链接，但是几乎都出自同一篇文章，且该链接已经过时。为保险起见，还是自己手动抓包比较靠谱。抓包工具可选wireshark或Charles。因为本机只装了wireshark，因此用wireshark抓取，选中网卡eth0，Capture">
+<meta property="og:description" content="问题通过App Store跟新El Capitan，过程奇慢无比，几乎是不可能完成。下面是可行的更新办法。 更新步骤 抓取升级包的下载链接 目前网上有提供升级包的下载链接，但是几乎都出自同一篇文章，且该链接已经过时。为保险起见，还是自己手动抓包比较靠谱。抓包工具可选wireshark或Charles。因为本机只装了wireshark，因此用wireshark抓取，选中网卡eth0，Capture">
 <meta property="og:updated_time" content="2016-07-21T11:14:31.000Z">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="Mac 升级到El Capitan">
-<meta name="twitter:description" content="问题通过App Store跟新El Capitan，过程奇慢无比，几乎是不可能完成。下面是可行的更新办法。
-更新步骤
-抓取升级包的下载链接 目前网上有提供升级包的下载链接，但是几乎都出自同一篇文章，且该链接已经过时。为保险起见，还是自己手动抓包比较靠谱。抓包工具可选wireshark或Charles。因为本机只装了wireshark，因此用wireshark抓取，选中网卡eth0，Capture">
+<meta name="twitter:description" content="问题通过App Store跟新El Capitan，过程奇慢无比，几乎是不可能完成。下面是可行的更新办法。 更新步骤 抓取升级包的下载链接 目前网上有提供升级包的下载链接，但是几乎都出自同一篇文章，且该链接已经过时。为保险起见，还是自己手动抓包比较靠谱。抓包工具可选wireshark或Charles。因为本机只装了wireshark，因此用wireshark抓取，选中网卡eth0，Capture">
   
     <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
   
@@ -63,7 +58,7 @@
         <a id="nav-search-btn" class="nav-icon" title="Zoeken"></a>
       </nav>
       <div id="search-form-wrap">
-        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" results="0" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
       </div>
     </div>
   </div>
@@ -94,12 +89,12 @@
         <h3 id="问题"><a href="#问题" class="headerlink" title="问题"></a>问题</h3><pre><code>通过App Store跟新El Capitan，过程奇慢无比，几乎是不可能完成。下面是可行的更新办法。
 </code></pre><h3 id="更新步骤"><a href="#更新步骤" class="headerlink" title="更新步骤"></a>更新步骤</h3><ol>
 <li><p>抓取升级包的下载链接<br> 目前网上有提供升级包的下载链接，但是几乎都出自同一篇文章，且该链接已经过时。为保险起见，还是自己手动抓包比较靠谱。抓包工具可选wireshark或Charles。因为本机只装了wireshark，因此用wireshark抓取，选中网卡eth0，Capture Filter选中TCP or UDP port 80 (HTTP)。打开App Store，点击升级El Capitan。抓取到链接如下：</p>
- <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">http://osxapps.itunes.apple.com/apple-assets-us-std-000001/Purple49/v4/de/57/69/de576928-f6f5-9384-8dd4-974e3fcca649/encrypted226869791772508350.pkg</div></pre></td></tr></table></figure>
+ <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http://osxapps.itunes.apple.com/apple-assets-us-std-000001/Purple49/v4/de/57/69/de576928-f6f5-9384-8dd4-974e3fcca649/encrypted226869791772508350.pkg</span><br></pre></td></tr></table></figure>
 </li>
 <li><p>使用迅雷等工具下载刚才抓取的pkg包</p>
 </li>
 <li><p>搭建本地代理服务器<br> 这步的作用是将App Store更新时将目标服务器指向本地，具体步骤如下：</p>
- <figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div></pre></td><td class="code"><pre><div class="line">#create a tmp folder</div><div class="line">mkdir elCapitanRoot &amp;&amp; cd elCapitanRoot</div><div class="line"></div><div class="line">#create a folder structure to match apple server</div><div class="line">sudo mkdir -p ./apple-assets-us-std-000001/Purple49/v4/de/57/69/de576928-f6f5-9384-8dd4-974e3fcca649/</div><div class="line"></div><div class="line">#move downloaded pkg file to proper path</div><div class="line">sudo mv ../encrypted226869791772508350.pkg ./apple-assets-us-std-000001/Purple49/v4/de/57/69/de576928-f6f5-9384-8dd4-974e3fcca649/</div><div class="line"></div><div class="line">#start a web server when you are in &quot;elCapitanRoot&quot; folder</div><div class="line">sudo python -m SimpleHTTPServer 80</div><div class="line"></div><div class="line">#修改hosts文件</div><div class="line">sudo echo &quot;127.0.0.1 	osxapps.itunes.apple.com&quot; &gt;&gt; /etc/hosts</div></pre></td></tr></table></figure>
+ <figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">#create a tmp folder</span><br><span class="line">mkdir elCapitanRoot &amp;&amp; cd elCapitanRoot</span><br><span class="line"></span><br><span class="line">#create a folder structure to match apple server</span><br><span class="line">sudo mkdir -p ./apple-assets-us-std-000001/Purple49/v4/de/57/69/de576928-f6f5-9384-8dd4-974e3fcca649/</span><br><span class="line"></span><br><span class="line">#move downloaded pkg file to proper path</span><br><span class="line">sudo mv ../encrypted226869791772508350.pkg ./apple-assets-us-std-000001/Purple49/v4/de/57/69/de576928-f6f5-9384-8dd4-974e3fcca649/</span><br><span class="line"></span><br><span class="line">#start a web server when you are in &quot;elCapitanRoot&quot; folder</span><br><span class="line">sudo python -m SimpleHTTPServer 80</span><br><span class="line"></span><br><span class="line">#修改hosts文件</span><br><span class="line">sudo echo &quot;127.0.0.1 	osxapps.itunes.apple.com&quot; &gt;&gt; /etc/hosts</span><br></pre></td></tr></table></figure>
 <p> 以上步骤完成之后，就可以到App Store里重新升级了，此时就能看见更新速度和火箭一般。更新完成之后，记得把hosts改回来，不然以后就没法更新其它软件了。</p>
 </li>
 <li><p>至此就进入常规步骤，整个安装过程大概会花费30分钟吧。</p>
@@ -108,7 +103,7 @@
 <ol>
 <li>强制退出App Store</li>
 <li><p>进入下载缓存目录，在终端输入：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">sudo open $TMPDIR/../C/</div></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo open $TMPDIR/../C/</span><br></pre></td></tr></table></figure>
 </li>
 <li><p>直接删除com.apple.appstore 目录</p>
 </li>
@@ -122,7 +117,7 @@ http://www.jianshu.com/p/3cb89725da64
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2016/04/15/Mac-升级到El-Capitan/" data-id="cir1w6ho90001fkfyhko2ogil" class="article-share-link">Delen</a>
+      <a data-url="http://yoursite.com/2016/04/15/Mac-升级到El-Capitan/" data-id="cjautakgg00038gs67oca82ha" class="article-share-link">Delen</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Mac/">Mac</a></li></ul>
@@ -227,7 +222,7 @@ http://www.jianshu.com/p/3cb89725da64
   
   <div class="outer">
     <div id="footer-info" class="inner">
-      &copy; 2016 John Doe<br>
+      &copy; 2017 John Doe<br>
       Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
     </div>
   </div>

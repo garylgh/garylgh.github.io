@@ -48,9 +48,9 @@
       </nav>
       <nav id="sub-nav">
         
-          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS-каналы"></a>
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
         
-        <a id="nav-search-btn" class="nav-icon" title="Поиск"></a>
+        <a id="nav-search-btn" class="nav-icon" title="Søk"></a>
       </nav>
       <div id="search-form-wrap">
         <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
@@ -60,6 +60,246 @@
 </header>
       <div class="outer">
         <section id="main">
+  
+    <article id="post-log4js在pm2运行时坑点" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2018/07/04/log4js在pm2运行时坑点/" class="article-date">
+  <time datetime="2018-07-04T09:37:57.000Z" itemprop="datePublished">2018-07-04</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2018/07/04/log4js在pm2运行时坑点/">log4js在pm2运行时坑点</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h3 id="起因"><a href="#起因" class="headerlink" title="起因"></a>起因</h3><p>  近期对logger组件进行升级，使用log4js作为底层日志输出。在开发环境下通过node命令行启动程序，log能正常创建打印。但是在生产环境下，通过pm2启动程序后，发现日志文件无法正常创建。经过散弹枪式编程法跟踪后，发现当实例数量大于1时，日志文件无法正常创建。阅读源码发现是log4js与pm2配合的问题，而log4js的文档中并未提及该问题。</p>
+<h3 id="pm2以cluster模式启动程序时到底干了啥"><a href="#pm2以cluster模式启动程序时到底干了啥" class="headerlink" title="pm2以cluster模式启动程序时到底干了啥"></a>pm2以cluster模式启动程序时到底干了啥</h3><p>  既然上文说到与pm2有关，那么pm2是如何启动进程的呢？以下只讨论cluster模式。<br>  我们都知道cluster模式启动进程时，将会产生一个master进程和N个worker进程，那么pm2在启动应用程序时谁是master，谁是worker？<br>  实际上pm2启动进程时，master是pm2的内部进程，叫做God Daemon进程。所有的用户代码都是以worker进程的方式启动的。<br>  在pm2的lib/God.js里有如一段代码：<br>  <figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">cluster.setupMaster(&#123;</span><br><span class="line">  exec : path.resolve(path.dirname(<span class="built_in">module</span>.filename), <span class="string">'ProcessContainer.js'</span>)</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure></p>
+<p>  这段代码保证了在调用cluster.fork()方法时，pm2去加载用户代码，并在worker进程中执行。<br>  对应pm2运行原理的分析，这里先告一个段落，接下来我们看看log4js的源码是如何处理多进程写日志以及如何创建日志文件的。</p>
+<h3 id="多进程下，该如何写同一个日志文件？"><a href="#多进程下，该如何写同一个日志文件？" class="headerlink" title="多进程下，该如何写同一个日志文件？"></a>多进程下，该如何写同一个日志文件？</h3><p>  多个进程同时写一个文件时会发生什么呢？参考：<a href="https://blog.csdn.net/yangbodong22011/article/details/63064166" target="_blank" rel="noopener">多进程同时写一个文件会怎样？</a><br>  为了避免多进程同时写一个日志文件，log4js的实现方式是：通过IPC传递消息，由一个进程去写。</p>
+<p>  log4js.configure()方法执行的内部有如下的一段代码：<br>  <figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (config.disableClustering) &#123;</span><br><span class="line">  debug(<span class="string">'Not listening for cluster messages, because clustering disabled.'</span>);</span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> (isPM2Master()) &#123;</span><br><span class="line">  <span class="comment">// PM2 cluster support</span></span><br><span class="line">  <span class="comment">// PM2 runs everything as workers - install pm2-intercom for this to work.</span></span><br><span class="line">  <span class="comment">// we only want one of the app instances to write logs</span></span><br><span class="line">  debug(<span class="string">`listening for PM2 broadcast messages, <span class="subst">$&#123;process.pid&#125;</span>`</span>);</span><br><span class="line">  process.on(<span class="string">'message'</span>, receiver);</span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> (cluster.isMaster) &#123;</span><br><span class="line">  debug(<span class="string">`listening for cluster messages, <span class="subst">$&#123;process.pid&#125;</span>`</span>);</span><br><span class="line">  cluster.on(<span class="string">'message'</span>, receiver);</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">  debug(<span class="string">'not listening for messages, because we are not a master process'</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>  由上面的源码可以看到，在isPM2Master和cluster.isMaster为true时会注册两个监听函数，当worker进程通过IPC发送消息时，将通过receiver接受消息，并在master中进行写入log的操作。上一节说到，pm2的master是God Daemon进程，进程里肯定不包含任何log4js的调用。那么在使用pm2时，由谁来写日志呢？关键就在于isPM2Master函数。</p>
+<h3 id="isPM2Master是如何工作的"><a href="#isPM2Master是如何工作的" class="headerlink" title="isPM2Master是如何工作的"></a>isPM2Master是如何工作的</h3><p>  那么接下来我们将看看isPM2Master()这个方法的具体实现：<br>  <figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">isPM2Master</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">  <span class="keyword">return</span> config.pm2 &amp;&amp; process.env[config.pm2InstanceVar] === <span class="string">'0'</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>  我们看到有两个判断条件:</p>
+<ul>
+<li>条件一: config.pm2可以通过log4js的配置文件指定，可设置为”pm2=true”</li>
+<li><p>条件二: 从env里取环境变量config.pm2InstanceVar所代表的值，经运行发现默认情况下 pm2InstanceVar = NODE_APP_INSTANCE。</p>
+<p>关于NODE_APP_INSTANCE环境变量，在pm2源码的CHANGE_LOG里有这样一段描述:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">If we start let&apos;s say 4 instances of an app (cluster_mode),</span><br><span class="line">Each app will have a value in process.env.NODE_APP_INSTANCE which will be 0 for the first one,</span><br><span class="line">1, 2 and 3 for the next ones.</span><br></pre></td></tr></table></figure>
+<p>意即，当pm2启动4个用户进程的实例时，这四个进程的process.env.NODE_APP_INSTANCE环境变量值分别为0,1,2,3</p>
+<p><strong> 由此可见，当我们在log4js的配置文件设置pm2=true时，log4js将取NODE_APP_INSTANCE=0的进程作为写日志的主进程，这就避免了多进程写</strong></p>
+</li>
+</ul>
+<h3 id="为什么pm2以多进程方式启动时，无法创建日志文件"><a href="#为什么pm2以多进程方式启动时，无法创建日志文件" class="headerlink" title="为什么pm2以多进程方式启动时，无法创建日志文件"></a>为什么pm2以多进程方式启动时，无法创建日志文件</h3><p>  最终问题回到了文章开头提到的现象，究竟是为什么导致了创建日志文件失败呢，我们看看源码。在configuration.js的createAppender方法里有这么一段：<br>  <figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (<span class="keyword">this</span>.disableClustering || cluster.isMaster || (<span class="keyword">this</span>.pm2 &amp;&amp; process.env[<span class="keyword">this</span>.pm2InstanceVar] === <span class="string">'0'</span>)) &#123;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">    <span class="keyword">const</span> appender = appenderModule.configure(</span><br><span class="line">      config,</span><br><span class="line">      layouts,</span><br><span class="line">      <span class="keyword">this</span>.configuredAppenders.get.bind(<span class="keyword">this</span>.configuredAppenders),</span><br><span class="line">      <span class="keyword">this</span>.configuredLevels</span><br><span class="line">    );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>  可见(this.pm2 &amp;&amp; process.env[this.pm2InstanceVar] === ‘0’)就是我们上文提到的isPm2Master方法</p>
+<h3 id="问题的解决"><a href="#问题的解决" class="headerlink" title="问题的解决"></a>问题的解决</h3><p>  由此发现，解决这个问题的方式就是在log4js配置文件里加上pm2=true的选项，具体如下：<br>  <figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">log4js.configure(&#123;</span><br><span class="line">  appenders: &#123;</span><br><span class="line">    df: &#123;</span><br><span class="line">      type: <span class="string">'dateFile'</span>,</span><br><span class="line">      filename: <span class="string">'/Users/didi/Github/log4js-node/zhlin-logs/xxx.log'</span>,</span><br><span class="line">    &#125;,</span><br><span class="line">  &#125;,</span><br><span class="line">  categories: &#123;</span><br><span class="line">    <span class="keyword">default</span>: &#123; <span class="attr">appenders</span>: [<span class="string">'df'</span>], <span class="attr">level</span>: <span class="string">'DEBUG'</span> &#125;</span><br><span class="line">  &#125;,</span><br><span class="line">  pm2: <span class="literal">true</span>,</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2018/07/04/log4js在pm2运行时坑点/" data-id="cjj70erpi0005wus6upzerdks" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-Nodejs调用c-扩展" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2018/06/08/Nodejs调用c-扩展/" class="article-date">
+  <time datetime="2018-06-08T07:19:54.000Z" itemprop="datePublished">2018-06-08</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2018/06/08/Nodejs调用c-扩展/">Nodejs调用c++扩展</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h2 id="相关概念"><a href="#相关概念" class="headerlink" title="相关概念"></a>相关概念</h2><ul>
+<li><p>V8<br>the C++ library Node.js currently uses to provide the JavaScript implementation. <a href="https://v8docs.nodesource.com/" target="_blank" rel="noopener">V8 doc</a></p>
+</li>
+<li><p>libuv<br>The C library that implements the Node.js event loop, its worker threads and all of the asynchronous behaviors of the platform. <a href="https://github.com/libuv/libuv" target="_blank" rel="noopener">libuv doc</a></p>
+</li>
+<li><p>Internal Node.js libraries<br>Node.js itself exports a number of C++ APIs that Addons can use — the most important of which is the node::ObjectWrap class. 位于node源码的src目录下。</p>
+</li>
+<li><p>node-gyp<br>a tool written specifically to compile Node.js Addons. This version is not made directly available for developers to use and is intended only to support the ability to use the npm install command to compile and install Addons.<br><a href="https://nodejs.org/api/addons.html#addons_linking_to_node_js_own_dependencies" target="_blank" rel="noopener">Linking to Node.js’ own dependencies</a><br><a href="https://github.com/nodejs/node-gyp#installation" target="_blank" rel="noopener">node-gyp doc</a></p>
+<p>when node-gyp runs, it will detect the node’s version, and find the sources or headers in ~/.node-gyp. If it cannot find any sources or headers, it will download  either the full source tarball or just the headers. We can use the –nodedir flag pointing at a local Node.js source image.</p>
+</li>
+<li><p>binding.gyp<br>node-gyp在编译时，会读取addon根目录下的binding.gyp文件，然后build/目录下生产Makefile文件(Unix/MacOs)或者vcxproj文件(Windows)，文件结构如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  &quot;targets&quot;: [</span><br><span class="line">    &#123;</span><br><span class="line">      &quot;target_name&quot;: &quot;hello&quot;,</span><br><span class="line">      &quot;sources&quot;: [ &quot;hello.cc&quot; ],</span><br><span class="line">      &quot;include_dirs&quot;: [</span><br><span class="line">        &quot;&lt;!(node -e \&quot;require(&apos;nan&apos;)\&quot;)&quot;</span><br><span class="line">      ]</span><br><span class="line">    &#125;,&#123;</span><br><span class="line">      &quot;target_name&quot;: &quot;addon2&quot;,</span><br><span class="line">      &quot;sources&quot;: [ &quot;2/addon.cc&quot;, &quot;2/myobject.cc&quot; ]</span><br><span class="line">    &#125;</span><br><span class="line">  ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>.node<br>.node文件是c++ addon经node-gyp编译后生成的动态链接库(相当于.dll或.so或.dylib)，一般位于build/Release/addon.node, 可供js调用. 底层通过process.dlopen(module, filename)函数加载(in node.cc)。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">const addon = require(&apos;./build/Release/addon&apos;)</span><br><span class="line">addon.your_c_function()</span><br></pre></td></tr></table></figure>
+<p>如果引入bindings包（见下节）可调用如下：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">const addon = require(&apos;bindings&apos;)(&apos;addon.node&apos;)</span><br><span class="line">addon.your_c_function()</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>node-bindings<br><a href="https://github.com/TooTallNate/node-bindings" target="_blank" rel="noopener">node-bindings doc</a></p>
+</li>
+<li><p>node-ffi<br>node-ffi is a Node.js addon for loading and calling dynamic libraries using pure JavaScript. It can be used to create bindings to native libraries without writing any C++ code.</p>
+</li>
+<li><p>Nan(Native Abstractions for Node.js)<br>A header file filled with macro and utility goodness for making add-on development for Node.js easier across versions 0.8, 0.10, 0.12, 1, 2, 3, 4, 5, 6, 7, 8, 9 and 10.<br><a href="https://github.com/nodejs/nan" target="_blank" rel="noopener">doc</a></p>
+</li>
+<li><p>N-API(From v8.0.0)<br>N-API (pronounced N as in the letter, followed by API) is an API for building native Addons. It is independent from the underlying JavaScript runtime (ex V8) and is maintained as part of Node.js itself. This API will be Application Binary Interface (ABI) stable across versions of Node.js. It is intended to insulate Addons from changes in the underlying JavaScript engine and allow modules compiled for one version to run on later versions of Node.js without recompilation.<br><a href="https://nodejs.org/api/n-api.html" target="_blank" rel="noopener">doc</a></p>
+</li>
+<li><p>node-addon-api<br><a href="https://github.com/nodejs/node-addon-api" target="_blank" rel="noopener">doc</a></p>
+</li>
+</ul>
+<h2 id="实现的三种方式"><a href="#实现的三种方式" class="headerlink" title="实现的三种方式"></a>实现的三种方式</h2><ol>
+<li><p>直接使用Node.js和V8 API<br>-缺点：V8 API can, and has, changed dramatically from one V8 release to the next</p>
+</li>
+<li><p>Nan</p>
+</li>
+<li><p>使用N-API</p>
+</li>
+<li><p>使用node-ffi</p>
+</li>
+</ol>
+<h2 id="案例分析"><a href="#案例分析" class="headerlink" title="案例分析"></a>案例分析</h2><p>  <a href="https://github.com/lovell/sharp" target="_blank" rel="noopener">sharp</a>是一个Node.js的图像处理库，底层依赖c++图像库<a href="https://github.com/jcupitt/libvips" target="_blank" rel="noopener">libvips</a>,下面通过分析sharp的构建过程，学习如何编写一个c++ addon</p>
+<ul>
+<li>相关资源<br><a href="https://github.com/lovell/sharp" target="_blank" rel="noopener">https://github.com/lovell/sharp</a><br><a href="https://github.com/lovell/sharp-libvips" target="_blank" rel="noopener">https://github.com/lovell/sharp-libvips</a><br><a href="https://github.com/lovell/package-libvips-darwin" target="_blank" rel="noopener">https://github.com/lovell/package-libvips-darwin</a><br><a href="https://github.com/jcupitt/libvips" target="_blank" rel="noopener">https://github.com/jcupitt/libvips</a></li>
+<li><p>安装过程</p>
+<ol>
+<li>执行npm install，将执行以下指令<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">(node install/libvips &amp;&amp; node install/dll-copy &amp;&amp; prebuild-install) || (node-gyp rebuild &amp;&amp; node install/dll-copy)</span><br></pre></td></tr></table></figure>
+</li>
+</ol>
+<p>其中install/libvips.js将根据platform和版本，从<a href="https://github.com/lovell/sharp-libvips/releases下载libvips依赖的动态链接库，此库将保存在vendor目录下，包含所有的动态链接库和头文件。sharp-libvips工程通过docker将不同平台依赖的包预先构建打包了。" target="_blank" rel="noopener">https://github.com/lovell/sharp-libvips/releases下载libvips依赖的动态链接库，此库将保存在vendor目录下，包含所有的动态链接库和头文件。sharp-libvips工程通过docker将不同平台依赖的包预先构建打包了。</a></p>
+<ol>
+<li>执行node-gyp rebuild<br>此命令将根据binding.gyp文件的描述，将c代码编译，生成目标文件build/Release/sharp.node。至此安装完成</li>
+</ol>
+</li>
+</ul>
+<h2 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h2><p>  <a href="https://nodejs.org/api/addons.html" target="_blank" rel="noopener">C++ Addons</a><br>  <a href="https://cnodejs.org/topic/5957626dacfce9295ba072e0" target="_blank" rel="noopener">Node.js 原生模块开发方式变迁</a><br>  <a href="https://medium.com/the-node-js-collection/n-api-next-generation-node-js-apis-for-native-modules-169af5235b06" target="_blank" rel="noopener">N-API: Next generation Node.js APIs for native modules</a></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2018/06/08/Nodejs调用c-扩展/" data-id="cjj70erpk0006wus698tz63xb" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-mac安装protobuf2-5-0" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2018/06/06/mac安装protobuf2-5-0/" class="article-date">
+  <time datetime="2018-06-06T08:48:03.000Z" itemprop="datePublished">2018-06-06</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2018/06/06/mac安装protobuf2-5-0/">mac安装protobuf2.5.0</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h3 id="起因"><a href="#起因" class="headerlink" title="起因"></a>起因</h3><p>编译hadoop2.9.0时提示如下错误：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">[ERROR] Failed to execute goal org.apache.hadoop:hadoop-maven-plugins:2.9.0:protoc (compile-protoc) on project hadoop-common: org.apache.maven.plugin.MojoExecutionException: protoc version is &apos;libprotoc 3.5.1&apos;, expected version is &apos;2.5.0&apos; -&gt; [Help 1]</span><br></pre></td></tr></table></figure></p>
+<h3 id="安装步骤"><a href="#安装步骤" class="headerlink" title="安装步骤"></a>安装步骤</h3><ul>
+<li><p>下载源码</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">wget https://github.com/google/protobuf/releases/download/v2.5.0/protobuf-2.5.0.tar.bz2</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>解压源码</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">tar xfvj protobuf-2.5.0.tar.bz2</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>配置编译选项</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> protobuf-2.5.0</span><br><span class="line">./configure CC=clang CXX=clang++ CXXFLAGS=<span class="string">'-std=c++11 -stdlib=libc++ -O3 -g'</span> LDFLAGS=<span class="string">'-stdlib=libc++'</span> LIBS=<span class="string">'-lc++ -lc++abi'</span></span><br></pre></td></tr></table></figure>
+</li>
+<li><p>编译安装</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">make -j 4</span><br><span class="line">sudo make install</span><br></pre></td></tr></table></figure></li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2018/06/06/mac安装protobuf2-5-0/" data-id="cjj70erpq000awus672405euo" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
+  
+    <article id="post-typescript精华" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2018/06/01/typescript精华/" class="article-date">
+  <time datetime="2018-06-01T03:36:23.000Z" itemprop="datePublished">2018-06-01</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 itemprop="name">
+      <a class="article-title" href="/2018/06/01/typescript精华/">typescript精华</a>
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h1 id="Typescript精华"><a href="#Typescript精华" class="headerlink" title="Typescript精华"></a>Typescript精华</h1><h3 id="Strict-Mode"><a href="#Strict-Mode" class="headerlink" title="Strict Mode"></a>Strict Mode</h3><ul>
+<li><p>noImplicitAny<br>如下的代码在严格模式下将会报错，需显示指定someArg的类型</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">function log(someArg) &#123; // Error : someArg has an implicit `any` type</span><br><span class="line">  sendDataToServer(someArg);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>strictNullChecks</p>
+</li>
+</ul>
+<p>下段代码在strict模式下，编译器将提示elem可能为null<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">const elem = document.getElementById(&apos;test&apos;);</span><br><span class="line">elem.innerHTML = &apos;Hello World&apos;;</span><br></pre></td></tr></table></figure></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2018/06/01/typescript精华/" data-id="cjj70erpo0009wus6s2ihk1d6" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+</article>
+
+
   
     <article id="post-使用SSH-Tunnel远程调试Nodejs" class="article article-type-post" itemscope itemprop="blogPost">
   <div class="article-meta">
@@ -110,7 +350,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2018/05/24/使用SSH-Tunnel远程调试Nodejs/" data-id="cjhkfof9r0004n9fyxkpfo9xu" class="article-share-link">Поделиться</a>
+      <a data-url="http://yoursite.com/2018/05/24/使用SSH-Tunnel远程调试Nodejs/" data-id="cjj70erq4000bwus64rk4l6sl" class="article-share-link">Share</a>
       
       
     </footer>
@@ -151,7 +391,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2016/07/25/node调试参数-debug与-debug-brk的区别/" data-id="cjhkfof9o0002n9fyqqzam151" class="article-share-link">Поделиться</a>
+      <a data-url="http://yoursite.com/2016/07/25/node调试参数-debug与-debug-brk的区别/" data-id="cjj70erpm0007wus6b4e3dq6b" class="article-share-link">Share</a>
       
       
     </footer>
@@ -198,7 +438,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2016/07/21/Javascrip-Date/" data-id="cjhkfof9v0006n9fys0ubimki" class="article-share-link">Поделиться</a>
+      <a data-url="http://yoursite.com/2016/07/21/Javascrip-Date/" data-id="cjj70erpd0003wus69lt9iyo7" class="article-share-link">Share</a>
       
       
     </footer>
@@ -245,7 +485,7 @@
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2016/05/27/Eslint开启ES7语法校验/" data-id="cjhkfof9h0000n9fydbuyz1uc" class="article-share-link">Поделиться</a>
+      <a data-url="http://yoursite.com/2016/05/27/Eslint开启ES7语法校验/" data-id="cjj70erp90001wus6yj0w1h1o" class="article-share-link">Share</a>
       
       
     </footer>
@@ -308,7 +548,7 @@ http://www.jianshu.com/p/3cb89725da64
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2016/04/15/Mac-升级到El-Capitan/" data-id="cjhkfof9m0001n9fy1ojbx437" class="article-share-link">Поделиться</a>
+      <a data-url="http://yoursite.com/2016/04/15/Mac-升级到El-Capitan/" data-id="cjj70erpc0002wus6qfzc56yz" class="article-share-link">Share</a>
       
       
   <ul class="article-tag-list"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Mac/">Mac</a></li></ul>
@@ -353,7 +593,7 @@ http://www.jianshu.com/p/3cb89725da64
       
     </div>
     <footer class="article-footer">
-      <a data-url="http://yoursite.com/2016/03/18/ES6-generator-indeep/" data-id="cjhkfof9t0005n9fy3n1pzjh2" class="article-share-link">Поделиться</a>
+      <a data-url="http://yoursite.com/2016/03/18/ES6-generator-indeep/" data-id="cjj70erp20000wus6ampct46d" class="article-share-link">Share</a>
       
       
     </footer>
@@ -373,7 +613,7 @@ http://www.jianshu.com/p/3cb89725da64
   
     
   <div class="widget-wrap">
-    <h3 class="widget-title">Метки</h3>
+    <h3 class="widget-title">Tags</h3>
     <div class="widget">
       <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Mac/">Mac</a></li></ul>
     </div>
@@ -383,7 +623,7 @@ http://www.jianshu.com/p/3cb89725da64
   
     
   <div class="widget-wrap">
-    <h3 class="widget-title">Облако меток</h3>
+    <h3 class="widget-title">Tag Cloud</h3>
     <div class="widget tagcloud">
       <a href="/tags/Mac/" style="font-size: 10px;">Mac</a>
     </div>
@@ -392,9 +632,9 @@ http://www.jianshu.com/p/3cb89725da64
   
     
   <div class="widget-wrap">
-    <h3 class="widget-title">Архив</h3>
+    <h3 class="widget-title">Arkiv</h3>
     <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/05/">May 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/07/">July 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/05/">May 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/04/">April 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/03/">March 2016</a></li></ul>
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/07/">July 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/06/">June 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/05/">May 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/07/">July 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/05/">May 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/04/">April 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/03/">March 2016</a></li></ul>
     </div>
   </div>
 
@@ -402,28 +642,28 @@ http://www.jianshu.com/p/3cb89725da64
   
     
   <div class="widget-wrap">
-    <h3 class="widget-title">Недавние записи</h3>
+    <h3 class="widget-title">Siste innlegg</h3>
     <div class="widget">
       <ul>
         
           <li>
+            <a href="/2018/07/04/log4js在pm2运行时坑点/">log4js在pm2运行时坑点</a>
+          </li>
+        
+          <li>
+            <a href="/2018/06/08/Nodejs调用c-扩展/">Nodejs调用c++扩展</a>
+          </li>
+        
+          <li>
+            <a href="/2018/06/06/mac安装protobuf2-5-0/">mac安装protobuf2.5.0</a>
+          </li>
+        
+          <li>
+            <a href="/2018/06/01/typescript精华/">typescript精华</a>
+          </li>
+        
+          <li>
             <a href="/2018/05/24/使用SSH-Tunnel远程调试Nodejs/">使用SSH Tunnel远程调试Nodejs</a>
-          </li>
-        
-          <li>
-            <a href="/2016/07/25/node调试参数-debug与-debug-brk的区别/">node调试参数--debug与--debug-brk的区别</a>
-          </li>
-        
-          <li>
-            <a href="/2016/07/21/Javascrip-Date/">Javascrip Date</a>
-          </li>
-        
-          <li>
-            <a href="/2016/05/27/Eslint开启ES7语法校验/">Eslint开启ES7语法校验</a>
-          </li>
-        
-          <li>
-            <a href="/2016/04/15/Mac-升级到El-Capitan/">Mac 升级到El Capitan</a>
           </li>
         
       </ul>
@@ -439,7 +679,7 @@ http://www.jianshu.com/p/3cb89725da64
   <div class="outer">
     <div id="footer-info" class="inner">
       &copy; 2018 John Doe<br>
-      Создано с помощью <a href="http://hexo.io/" target="_blank">Hexo</a>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
     </div>
   </div>
 </footer>

@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+  <title>log4js在pm2运行时坑点 | Hexo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="起因  近期对logger组件进行升级，使用log4js作为底层日志输出。在开发环境下通过node命令行启动程序，log能正常创建打印。但是在生产环境下，通过pm2启动程序后，发现日志文件无法正常创建。经过散弹枪式编程法跟踪后，发现当实例数量大于1时，日志文件无法正常创建。阅读源码发现是log4js与pm2配合的问题，">
+<meta property="og:type" content="article">
+<meta property="og:title" content="log4js在pm2运行时坑点">
+<meta property="og:url" content="http://yoursite.com/2018/07/04/log4js在pm2运行时坑点/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="起因  近期对logger组件进行升级，使用log4js作为底层日志输出。在开发环境下通过node命令行启动程序，log能正常创建打印。但是在生产环境下，通过pm2启动程序后，发现日志文件无法正常创建。经过散弹枪式编程法跟踪后，发现当实例数量大于1时，日志文件无法正常创建。阅读源码发现是log4js与pm2配合的问题，而log4js的文档中并未提及该问题。 pm2以cluster模式启动程序时到底">
+<meta property="og:updated_time" content="2018-07-04T10:54:37.161Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="log4js在pm2运行时坑点">
+<meta name="twitter:description" content="起因  近期对logger组件进行升级，使用log4js作为底层日志输出。在开发环境下通过node命令行启动程序，log能正常创建打印。但是在生产环境下，通过pm2启动程序后，发现日志文件无法正常创建。经过散弹枪式编程法跟踪后，发现当实例数量大于1时，日志文件无法正常创建。阅读源码发现是log4js与pm2配合的问题，而log4js的文档中并未提及该问题。 pm2以cluster模式启动程序时到底">
+  
+    <link rel="alternate" href="/atom.xml" title="Hexo" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  <link rel="stylesheet" href="/css/style.css">
+  
+
+</head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">Hexo</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">Home</a>
+        
+          <a class="main-nav-link" href="/archives">Archives</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="Søk"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://yoursite.com"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-log4js在pm2运行时坑点" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2018/07/04/log4js在pm2运行时坑点/" class="article-date">
+  <time datetime="2018-07-04T09:37:57.000Z" itemprop="datePublished">2018-07-04</time>
+</a>
+    
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      log4js在pm2运行时坑点
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <h3 id="起因"><a href="#起因" class="headerlink" title="起因"></a>起因</h3><p>  近期对logger组件进行升级，使用log4js作为底层日志输出。在开发环境下通过node命令行启动程序，log能正常创建打印。但是在生产环境下，通过pm2启动程序后，发现日志文件无法正常创建。经过散弹枪式编程法跟踪后，发现当实例数量大于1时，日志文件无法正常创建。阅读源码发现是log4js与pm2配合的问题，而log4js的文档中并未提及该问题。</p>
+<h3 id="pm2以cluster模式启动程序时到底干了啥"><a href="#pm2以cluster模式启动程序时到底干了啥" class="headerlink" title="pm2以cluster模式启动程序时到底干了啥"></a>pm2以cluster模式启动程序时到底干了啥</h3><p>  既然上文说到与pm2有关，那么pm2是如何启动进程的呢？以下只讨论cluster模式。<br>  我们都知道cluster模式启动进程时，将会产生一个master进程和N个worker进程，那么pm2在启动应用程序时谁是master，谁是worker？<br>  实际上pm2启动进程时，master是pm2的内部进程，叫做God Daemon进程。所有的用户代码都是以worker进程的方式启动的。<br>  在pm2的lib/God.js里有如一段代码：<br>  <figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">cluster.setupMaster(&#123;</span><br><span class="line">  exec : path.resolve(path.dirname(<span class="built_in">module</span>.filename), <span class="string">'ProcessContainer.js'</span>)</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure></p>
+<p>  这段代码保证了在调用cluster.fork()方法时，pm2去加载用户代码，并在worker进程中执行。<br>  对应pm2运行原理的分析，这里先告一个段落，接下来我们看看log4js的源码是如何处理多进程写日志以及如何创建日志文件的。</p>
+<h3 id="多进程下，该如何写同一个日志文件？"><a href="#多进程下，该如何写同一个日志文件？" class="headerlink" title="多进程下，该如何写同一个日志文件？"></a>多进程下，该如何写同一个日志文件？</h3><p>  多个进程同时写一个文件时会发生什么呢？参考：<a href="https://blog.csdn.net/yangbodong22011/article/details/63064166" target="_blank" rel="noopener">多进程同时写一个文件会怎样？</a><br>  为了避免多进程同时写一个日志文件，log4js的实现方式是：通过IPC传递消息，由一个进程去写。</p>
+<p>  log4js.configure()方法执行的内部有如下的一段代码：<br>  <figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (config.disableClustering) &#123;</span><br><span class="line">  debug(<span class="string">'Not listening for cluster messages, because clustering disabled.'</span>);</span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> (isPM2Master()) &#123;</span><br><span class="line">  <span class="comment">// PM2 cluster support</span></span><br><span class="line">  <span class="comment">// PM2 runs everything as workers - install pm2-intercom for this to work.</span></span><br><span class="line">  <span class="comment">// we only want one of the app instances to write logs</span></span><br><span class="line">  debug(<span class="string">`listening for PM2 broadcast messages, <span class="subst">$&#123;process.pid&#125;</span>`</span>);</span><br><span class="line">  process.on(<span class="string">'message'</span>, receiver);</span><br><span class="line">&#125; <span class="keyword">else</span> <span class="keyword">if</span> (cluster.isMaster) &#123;</span><br><span class="line">  debug(<span class="string">`listening for cluster messages, <span class="subst">$&#123;process.pid&#125;</span>`</span>);</span><br><span class="line">  cluster.on(<span class="string">'message'</span>, receiver);</span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">  debug(<span class="string">'not listening for messages, because we are not a master process'</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>  由上面的源码可以看到，在isPM2Master和cluster.isMaster为true时会注册两个监听函数，当worker进程通过IPC发送消息时，将通过receiver接受消息，并在master中进行写入log的操作。上一节说到，pm2的master是God Daemon进程，进程里肯定不包含任何log4js的调用。那么在使用pm2时，由谁来写日志呢？关键就在于isPM2Master函数。</p>
+<h3 id="isPM2Master是如何工作的"><a href="#isPM2Master是如何工作的" class="headerlink" title="isPM2Master是如何工作的"></a>isPM2Master是如何工作的</h3><p>  那么接下来我们将看看isPM2Master()这个方法的具体实现：<br>  <figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">isPM2Master</span>(<span class="params"></span>) </span>&#123;</span><br><span class="line">  <span class="keyword">return</span> config.pm2 &amp;&amp; process.env[config.pm2InstanceVar] === <span class="string">'0'</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>  我们看到有两个判断条件:</p>
+<ul>
+<li>条件一: config.pm2可以通过log4js的配置文件指定，可设置为”pm2=true”</li>
+<li><p>条件二: 从env里取环境变量config.pm2InstanceVar所代表的值，经运行发现默认情况下 pm2InstanceVar = NODE_APP_INSTANCE。</p>
+<p>关于NODE_APP_INSTANCE环境变量，在pm2源码的CHANGE_LOG里有这样一段描述:</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">If we start let&apos;s say 4 instances of an app (cluster_mode),</span><br><span class="line">Each app will have a value in process.env.NODE_APP_INSTANCE which will be 0 for the first one,</span><br><span class="line">1, 2 and 3 for the next ones.</span><br></pre></td></tr></table></figure>
+<p>意即，当pm2启动4个用户进程的实例时，这四个进程的process.env.NODE_APP_INSTANCE环境变量值分别为0,1,2,3</p>
+<p><strong> 由此可见，当我们在log4js的配置文件设置pm2=true时，log4js将取NODE_APP_INSTANCE=0的进程作为写日志的主进程，这就避免了多进程写</strong></p>
+</li>
+</ul>
+<h3 id="为什么pm2以多进程方式启动时，无法创建日志文件"><a href="#为什么pm2以多进程方式启动时，无法创建日志文件" class="headerlink" title="为什么pm2以多进程方式启动时，无法创建日志文件"></a>为什么pm2以多进程方式启动时，无法创建日志文件</h3><p>  最终问题回到了文章开头提到的现象，究竟是为什么导致了创建日志文件失败呢，我们看看源码。在configuration.js的createAppender方法里有这么一段：<br>  <figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> (<span class="keyword">this</span>.disableClustering || cluster.isMaster || (<span class="keyword">this</span>.pm2 &amp;&amp; process.env[<span class="keyword">this</span>.pm2InstanceVar] === <span class="string">'0'</span>)) &#123;</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">    <span class="keyword">const</span> appender = appenderModule.configure(</span><br><span class="line">      config,</span><br><span class="line">      layouts,</span><br><span class="line">      <span class="keyword">this</span>.configuredAppenders.get.bind(<span class="keyword">this</span>.configuredAppenders),</span><br><span class="line">      <span class="keyword">this</span>.configuredLevels</span><br><span class="line">    );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>  可见(this.pm2 &amp;&amp; process.env[this.pm2InstanceVar] === ‘0’)就是我们上文提到的isPm2Master方法</p>
+<h3 id="问题的解决"><a href="#问题的解决" class="headerlink" title="问题的解决"></a>问题的解决</h3><p>  由此发现，解决这个问题的方式就是在log4js配置文件里加上pm2=true的选项，具体如下：<br>  <figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">log4js.configure(&#123;</span><br><span class="line">  appenders: &#123;</span><br><span class="line">    df: &#123;</span><br><span class="line">      type: <span class="string">'dateFile'</span>,</span><br><span class="line">      filename: <span class="string">'/Users/didi/Github/log4js-node/zhlin-logs/xxx.log'</span>,</span><br><span class="line">    &#125;,</span><br><span class="line">  &#125;,</span><br><span class="line">  categories: &#123;</span><br><span class="line">    <span class="keyword">default</span>: &#123; <span class="attr">appenders</span>: [<span class="string">'df'</span>], <span class="attr">level</span>: <span class="string">'DEBUG'</span> &#125;</span><br><span class="line">  &#125;,</span><br><span class="line">  pm2: <span class="literal">true</span>,</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure></p>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="http://yoursite.com/2018/07/04/log4js在pm2运行时坑点/" data-id="cjj70erpi0005wus6upzerdks" class="article-share-link">Share</a>
+      
+      
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/2018/06/08/Nodejs调用c-扩展/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">Nodejs调用c++扩展</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tags</h3>
+    <div class="widget">
+      <ul class="tag-list"><li class="tag-list-item"><a class="tag-list-link" href="/tags/Mac/">Mac</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Tag Cloud</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/Mac/" style="font-size: 10px;">Mac</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Arkiv</h3>
+    <div class="widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/07/">July 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/06/">June 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2018/05/">May 2018</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/07/">July 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/05/">May 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/04/">April 2016</a></li><li class="archive-list-item"><a class="archive-list-link" href="/archives/2016/03/">March 2016</a></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">Siste innlegg</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2018/07/04/log4js在pm2运行时坑点/">log4js在pm2运行时坑点</a>
+          </li>
+        
+          <li>
+            <a href="/2018/06/08/Nodejs调用c-扩展/">Nodejs调用c++扩展</a>
+          </li>
+        
+          <li>
+            <a href="/2018/06/06/mac安装protobuf2-5-0/">mac安装protobuf2.5.0</a>
+          </li>
+        
+          <li>
+            <a href="/2018/06/01/typescript精华/">typescript精华</a>
+          </li>
+        
+          <li>
+            <a href="/2018/05/24/使用SSH-Tunnel远程调试Nodejs/">使用SSH Tunnel远程调试Nodejs</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2018 John Doe<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">Home</a>
+  
+    <a href="/archives" class="mobile-nav-link">Archives</a>
+  
+</nav>
+    
+
+<script src="//ajax.googleapis.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+
+
+  <link rel="stylesheet" href="/fancybox/jquery.fancybox.css">
+  <script src="/fancybox/jquery.fancybox.pack.js"></script>
+
+
+<script src="/js/script.js"></script>
+
+  </div>
+</body>
+</html>
